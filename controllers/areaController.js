@@ -1,12 +1,13 @@
 const Area = require('../models/areaModel');
+const catchAsync = require('../utils/catchAsync');
 
-exports.bindLights = async (req, res, next) => {
+exports.bindLights = catchAsync(async (req, res, next) => {
   const newArea = await Area.create(req.body);
 
   res.status(201).json({
     status: 'success',
     data: {
-      tour: newArea,
+      area: newArea,
     },
   });
-};
+});

@@ -18,7 +18,7 @@ app.set('port', port);
  * Connect to MongdoDB
  */
 
-mongoose.connect('mongodb://localhost/light').then(() => {
+mongoose.connect('mongodb://127.0.0.1/light').then(() => {
   console.log('DB connection successful!');
 });
 

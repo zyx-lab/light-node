@@ -1,9 +1,14 @@
-const createError = require('http-errors');
+// const createError = require('http-errors');
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const dotenv = require('dotenv');
 
+dotenv.config({ path: './config.env' });
+
+const AppError = require('./utils/appError');
+const globalErrorHandler = require('./controllers/errorController');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const areaRouter = require('./routes/areaRoutes');
@@ -24,20 +29,26 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/area', areaRouter);
 
-// catch 404 and forward to error handler
-app.use((req, res, next) => {
-  next(createError(404));
+app.all('*', (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
+
+app.use(globalErrorHandler);
+
+// catch 404 and forward to error handler
+// app.use((req, res, next) => {
+//   next(createError(404));
+// });
 
 // error handler
-app.use((err, req, res, next) => {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+// app.use((err, req, res, next) => {
+//   // set locals, only providing error in development
+//   res.locals.message = err.message;
+//   res.locals.error = req.app.get('env') === 'development' ? err : {};
+//   console.log(res);
+//   // render the error page
+//   res.status(err.status || 500);
+//   res.render('error');
+// });
 
 module.exports = app;

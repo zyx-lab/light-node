@@ -1,5 +1,5 @@
 const express = require('express');
-const areaController = require('../controller/areaController');
+const areaController = require('../controllers/areaController');
 
 const { bindLights } = areaController;
 
