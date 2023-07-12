@@ -59,6 +59,6 @@ module.exports = (err, req, res, next) => {
     if (err.code === 11000) error = handleDuplicateFieldsDB(err);
     if (err.name === 'ValidationError') error = handleValidationErrorDB(err);
 
-    sendErrorProd(error, req, res);
+    sendErrorProd(error || err, req, res);
   }
 };
