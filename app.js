@@ -11,7 +11,8 @@ const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
-const areaRouter = require('./routes/areaRoutes');
+const shelfRouter = require('./routes/shelfRoutes');
+const locationRouter = require('./routes/locationRoutes');
 
 const app = express();
 
@@ -27,7 +28,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/area', areaRouter);
+app.use('/shelf', shelfRouter);
+app.use('/location', locationRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

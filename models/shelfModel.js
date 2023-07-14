@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 
-const areaSchema = new mongoose.Schema({
-  areaId: {
+const shelfSchema = new mongoose.Schema({
+  shelfId: {
     type: String,
-    required: [true, 'A area must have a area id'],
+    required: [true, 'A shelf must have a shelf id'],
     unique: true,
   },
   lightId: {
     type: String,
-    required: [true, 'A area must have a light id'],
+    required: [true, 'A shelf must have a light id'],
     unique: true,
   },
   color: {
@@ -27,6 +27,6 @@ const areaSchema = new mongoose.Schema({
   },
 });
 
-const Area = mongoose.model('Area', areaSchema);
+const Shelf = mongoose.model('Shelf', shelfSchema);
 
-module.exports = Area;
+module.exports = Shelf;
