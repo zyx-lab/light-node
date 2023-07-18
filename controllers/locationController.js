@@ -41,7 +41,7 @@ exports.updateLocation = catchAsync(async (req, res, next) => {
   const location = await Location.findOneAndUpdate(
     { locationId: req.params.locationId },
     {
-      shelfId: shelfId,
+      shelf: shelf,
       lightId: lightId,
     },
     {

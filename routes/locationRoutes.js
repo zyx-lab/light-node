@@ -1,4 +1,5 @@
 const express = require('express');
+const locationValidator = require('../validator/location');
 const locationController = require('../controllers/locationController');
 
 const {
@@ -12,7 +13,7 @@ const {
 const router = express.Router();
 
 router
-  .post('/create', createLocation)
+  .post('/create', locationValidator.create, createLocation)
   .delete('/delete/:locationId', deleteLocation)
   .patch('/update/:locationId', updateLocation)
   .get('/list', getAllLocations)
