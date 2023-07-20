@@ -22,7 +22,7 @@ const shelfSchema = new mongoose.Schema({
     type: Number,
     enum: {
       values: [0, 1, 2],
-      message: 'Status is either: 0, 1, 2',
+      message: 'Status is either: 0, 1, 3',
     },
   },
 });

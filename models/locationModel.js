@@ -17,7 +17,7 @@ const locationSchema = new mongoose.Schema(
     },
     duration: {
       // ms
-      type: String,
+      type: Number,
     },
     status: {
       type: Number,
@@ -26,20 +26,7 @@ const locationSchema = new mongoose.Schema(
         message: 'Status is either: 0, 1, 2',
       },
     },
-    taskType: {
-      type: Number,
-      enum: {
-        values: [1, 2, 3],
-        message: 'task type is either:  1, 2, 3',
-      },
-    },
     taskId: {
-      type: String,
-    },
-    goodsId: {
-      type: String,
-    },
-    userId: {
       type: String,
     },
     shelf: {
@@ -47,20 +34,12 @@ const locationSchema = new mongoose.Schema(
       ref: 'Shelf',
       required: [true, 'A location must belong to a shelf.'],
     },
-  },
-  {
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
+  // {
+  //   toJSON: { virtuals: true },
+  //   toObject: { virtuals: true },
+  // }
 );
-
-locationSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: 'shelf',
-    select: 'shelfId lightId',
-  });
-  next();
-});
 
 const Location = mongoose.model('Location', locationSchema);
 

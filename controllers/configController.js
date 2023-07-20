@@ -10,8 +10,9 @@ exports.save = catchAsync(async (req, res, next) => {
   configInstance.setOutColor(outColor);
   configInstance.setCheckColor(checkColor);
 
-  await configInstance.saveConfig();
+  const config = await configInstance.saveConfig();
   res.status(200).json({
     status: 'success',
+    data: { config },
   });
 });

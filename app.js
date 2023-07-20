@@ -14,6 +14,7 @@ const usersRouter = require('./routes/users');
 const shelfRouter = require('./routes/shelfRoutes');
 const locationRouter = require('./routes/locationRoutes');
 const configRouter = require('./routes/configRoutes');
+const lightRouter = require('./routes/lightRoutes');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/users', usersRouter);
 app.use('/shelf', shelfRouter);
 app.use('/location', locationRouter);
 app.use('/config', configRouter);
+app.use('/light', lightRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

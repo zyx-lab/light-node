@@ -23,17 +23,17 @@ const configService = require('../services/configService');
  */
 
 // const port = normalizePort(process.env.PORT || '3001');
-const port = normalizePort('3002');
+const port = normalizePort('3001');
 app.set('port', port);
 
 /**
  * Connect to MongdoDB
  */
 
-mongoose.connect('mongodb://127.0.0.1/light').then(() => {
-  console.log('DB connection successful!');
-  configService.init();
-});
+// mongoose.connect('mongodb://127.0.0.1:28017/light').then(() => {
+//   console.log('DB connection successful!');
+//   configService.init();
+// });
 
 /**
  * Create HTTP server.
@@ -44,8 +44,13 @@ const server = http.createServer(app);
 /**
  * Listen on provided port, on all network interfaces.
  */
+mongoose.connect('mongodb://127.0.0.1:28017/light').then(() => {
+  console.log('DB connection successful!');
+  configService.init();
+  server.listen(port);
+});
 
-server.listen(port);
+// server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
 

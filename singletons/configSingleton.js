@@ -14,12 +14,22 @@ class ConfigSingleton {
   }
 
   async loadConfig() {
-    this.config = await Config.findOne();
+    this.config = (await Config.findOne()) || {};
   }
 
   async saveConfig() {
     if (this.config) {
-      await this.config.save();
+      const res = await Config.updateOne(
+        {},
+        {
+          mode: this.config.mode,
+          inColor: this.config.inColor,
+          outColor: this.config.outColor,
+          checkColor: this.config.checkColor,
+        },
+        { upsert: true, new: true }
+      );
+      return res;
     }
   }
 
