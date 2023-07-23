@@ -10,11 +10,13 @@ dotenv.config({ path: './config.env' });
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
+const usersRouter = require('./routes/userRoutes');
 const shelfRouter = require('./routes/shelfRoutes');
 const locationRouter = require('./routes/locationRoutes');
 const configRouter = require('./routes/configRoutes');
 const lightRouter = require('./routes/lightRoutes');
+const colorRouter = require('./routes/colorRoutes');
+const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
@@ -34,6 +36,8 @@ app.use('/shelf', shelfRouter);
 app.use('/location', locationRouter);
 app.use('/config', configRouter);
 app.use('/light', lightRouter);
+app.use('/color', colorRouter);
+app.use('/user', userRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
