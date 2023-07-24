@@ -7,6 +7,11 @@ exports.inStock = validate([
     .withMessage('taskId不能为空')
     .isString()
     .withMessage('taskId为字符串类型'),
+  body('userId')
+    .notEmpty()
+    .withMessage('userId不能为空')
+    .isString()
+    .withMessage('userId为字符串类型'),
   body('duration').notEmpty().withMessage('duration不能为空'),
   body('locationIds')
     .isArray()
