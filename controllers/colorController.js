@@ -21,33 +21,6 @@ exports.createColor = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.updateColor = catchAsync(async (req, res, next) => {
-  const { _id, name, inColor, outColor, checkColor } = req.body;
-  const newColor = await Color.findByIdAndUpdate(
-    { _id },
-    {
-      name,
-      inColor,
-      outColor,
-      checkColor,
-    },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
-
-  if (!newColor) {
-    return next(new AppError('Not found color', 404));
-  }
-  res.status(200).json({
-    status: 'success',
-    data: {
-      newColor,
-    },
-  });
-});
-
 exports.deleteColor = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const session = await mongoose.startSession();
@@ -78,4 +51,55 @@ exports.deleteColor = catchAsync(async (req, res, next) => {
   } finally {
     await session.endSession();
   }
+});
+
+exports.updateColor = catchAsync(async (req, res, next) => {
+  const { _id, name, inColor, outColor, checkColor } = req.body;
+  const newColor = await Color.findByIdAndUpdate(
+    { _id },
+    {
+      name,
+      inColor,
+      outColor,
+      checkColor,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  if (!newColor) {
+    return next(new AppError('Not found color', 404));
+  }
+  res.status(200).json({
+    status: 'success',
+    data: {
+      newColor,
+    },
+  });
+});
+
+exports.getAllColors = catchAsync(async (req, res, next) => {
+  const colors = await Color.find({});
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      colors,
+    },
+  });
+});
+
+exports.getColor = catchAsync(async (req, res, next) => {
+  const color = await Color.findById(req.params.id).populate('users').exec();
+  if (!color) {
+    return next(new AppError('Not found color', 404));
+  }
+  res.status(200).json({
+    status: 'success',
+    data: {
+      color,
+    },
+  });
 });
