@@ -6,7 +6,6 @@ const AppError = require('../utils/appError');
 
 exports.createColor = catchAsync(async (req, res, next) => {
   const { name, inColor, outColor, checkColor } = req.body;
-
   const newColor = await Color.create({
     name,
     inColor,
@@ -18,6 +17,33 @@ exports.createColor = catchAsync(async (req, res, next) => {
     status: 'success',
     data: {
       color: newColor,
+    },
+  });
+});
+
+exports.updateColor = catchAsync(async (req, res, next) => {
+  const { _id, name, inColor, outColor, checkColor } = req.body;
+  const newColor = await Color.findByIdAndUpdate(
+    { _id },
+    {
+      name,
+      inColor,
+      outColor,
+      checkColor,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  if (!newColor) {
+    return next(new AppError('Not found color', 404));
+  }
+  res.status(200).json({
+    status: 'success',
+    data: {
+      newColor,
     },
   });
 });

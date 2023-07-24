@@ -23,3 +23,31 @@ exports.createColor = validate([
     .isString()
     .withMessage('checkColor为字符串类型'),
 ]);
+
+exports.upateColor = validate([
+  body('_id')
+    .notEmpty()
+    .withMessage('_id不能为空')
+    .isString()
+    .withMessage('_id为字符串类型'),
+  body('name')
+    .notEmpty()
+    .withMessage('name不能为空')
+    .isString()
+    .withMessage('name为字符串类型'),
+  body('inColor')
+    .notEmpty()
+    .withMessage('inColor不能为空')
+    .isString()
+    .withMessage('inColor为字符串类型'),
+  body('outColor')
+    .notEmpty()
+    .withMessage('outColor不能为空')
+    .isString()
+    .withMessage('outColor为字符串类型'),
+  body('checkColor')
+    .notEmpty()
+    .withMessage('checkColor不能为空')
+    .isString()
+    .withMessage('checkColor为字符串类型'),
+]);
