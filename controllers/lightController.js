@@ -49,42 +49,115 @@ exports.inStock = catchAsync(async (req, res, next) => {
         if (!location) notExist.push(item);
       });
       locationInfos.forEach((item) => {
-        if (item.status === 1) working.push(item.locationId);
+        if (item.status === 1 || item.status === 2)
+          working.push(item.locationId);
         if (item.status === 3) err.push(item.locationId);
       });
-
-      // 更改库位灯
-      await Location.updateMany(
-        { locationId: { $in: locationIds } },
-        {
-          color: inColor,
-          duration,
-          status: 1,
-          taskId,
-          userId,
-        },
-        { runValidators: true, session }
+      const normal = locationIds.filter(
+        (item) =>
+          !notExist.includes(item) &&
+          !working.includes(item) &&
+          !err.includes(item)
       );
 
-      // 更改货架灯
-      const shelfs = locationInfos.map((item) => item.shelf);
-      await Shelf.updateMany(
-        {
-          _id: { $in: shelfs },
-        },
-        {
-          color: inColor,
-          duration,
-          status: 1,
-        },
-        { runValidators: true, session }
-      );
+      if (normal.length) {
+        // 更改库位灯
+        await Location.updateMany(
+          { locationId: { $in: normal } },
+          {
+            color: inColor,
+            duration,
+            status: 1,
+            taskId,
+            userId,
+          },
+          { runValidators: true, session }
+        );
+
+        // 更改货架灯
+        const shelfs = [];
+        locationInfos.forEach((item) => {
+          if (normal.includes(item.locationId)) {
+            shelfs.push(item.shelf);
+          }
+        });
+        await Shelf.updateMany(
+          {
+            _id: { $in: shelfs },
+          },
+          {
+            color: inColor,
+            duration,
+            status: 1,
+          },
+          { runValidators: true, session }
+        );
+      }
       res.status(200).json({
         status: 'success',
         data: {
           notExist,
           working,
           err,
+        },
+      });
+    }, transactionOptions);
+  } finally {
+    await session.endSession();
+  }
+});
+
+exports.process = catchAsync(async (req, res, next) => {
+  const { locationId } = req.body;
+  const newLocation = await Location.findOneAndUpdate(
+    { locationId },
+    { status: 2 },
+    { runValidators: true, new: true }
+  );
+
+  if (!newLocation) return next(new AppError('Not found location', 400));
+  res.status(200).json({
+    status: 'success',
+    data: {
+      location: newLocation,
+    },
+  });
+});
+
+exports.close = catchAsync(async (req, res, next) => {
+  const { lightId } = req.body;
+
+  const session = await mongoose.startSession();
+  const transactionOptions = {
+    readPreference: 'primary',
+    readConcern: { level: 'local' },
+    writeConcern: { w: 'majority' },
+  };
+
+  try {
+    await session.withTransaction(async () => {
+      // 关闭库位灯
+      const newLocation = await Location.findOneAndUpdate(
+        { lightId },
+        { status: 0 },
+        { runValidators: true, new: true }
+      );
+      if (!newLocation) return next(new AppError('Not found location', 400));
+
+      // 关闭货架灯
+      const shelfs = await Location.find({
+        shelf: newLocation.shelf,
+        status: { $in: [1, 2] },
+      });
+      if (!shelfs.length) {
+        await Shelf.findByIdAndUpdate(newLocation.shelf, {
+          status: 0,
+        });
+      }
+      res.status(200).json({
+        status: 'success',
+        data: {
+          location: newLocation,
         },
       });
     }, transactionOptions);

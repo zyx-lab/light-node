@@ -1,11 +1,14 @@
 const express = require('express');
-const userValidator = require('../validator/light');
+const lightValidator = require('../validator/lightValidator');
 const lightController = require('../controllers/lightController');
 
-const { inStock } = lightController;
+const { inStock, process, close } = lightController;
 
 const router = express.Router();
 
-router.post('/in_stock', userValidator.inStock, inStock);
+router
+  .patch('/in_stock', lightValidator.inStock, inStock)
+  .patch('/process', lightValidator.process, process)
+  .patch('/close', lightValidator.close, close);
 
 module.exports = router;
