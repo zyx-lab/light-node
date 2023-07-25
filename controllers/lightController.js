@@ -5,11 +5,14 @@ const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const configService = require('../services/configService');
+const { updateLightInfo } = require('../mqtt/publish');
 
 const filterLocation = (locationInfos, locationIds) => {
   const notExist = [];
   const working = [];
   const err = [];
+  const normal = [];
+  const lightIds = [];
   locationIds.forEach((item) => {
     const location = locationInfos.find((loc) => loc.locationId === item);
     if (!location) notExist.push(item);
@@ -17,16 +20,18 @@ const filterLocation = (locationInfos, locationIds) => {
   locationInfos.forEach((item) => {
     if (item.status === 1 || item.status === 2) working.push(item.locationId);
     if (item.status === 3) err.push(item.locationId);
+    if (item.status === 0) {
+      normal.push(item.locationId);
+      lightIds.push(item.lightId);
+    }
   });
-  const normal = locationIds.filter(
-    (item) =>
-      !notExist.includes(item) && !working.includes(item) && !err.includes(item)
-  );
+
   return {
     notExist,
     working,
     err,
     normal,
+    lightIds,
   };
 };
 
@@ -63,8 +68,9 @@ exports.inStock = catchAsync(async (req, res, next) => {
           locationId: { $in: locationIds },
         },
         { _id: 0, locationId: 1, lightId: 1, shelf: 1, status: 1 }
-      );
-      const { notExist, working, err, normal } = filterLocation(
+      ).populate({ path: 'shelf', select: 'lightId' });
+
+      const { notExist, working, err, normal, lightIds } = filterLocation(
         locationInfos,
         locationIds
       );
@@ -76,7 +82,7 @@ exports.inStock = catchAsync(async (req, res, next) => {
           {
             color: inColor,
             duration,
-            status: 1,
+            status: 2,
             taskId,
             taskType: 1,
             userId,
@@ -87,10 +93,14 @@ exports.inStock = catchAsync(async (req, res, next) => {
         // 更改货架灯
         const shelfs = [];
         locationInfos.forEach((item) => {
-          if (normal.includes(item.locationId)) {
-            shelfs.push(item.shelf);
+          const { locationId, shelf } = item;
+          const { _id, lightId } = shelf || {};
+          if (normal.includes(locationId)) {
+            shelfs.push(_id);
+            lightIds.push(lightId);
           }
         });
+
         await Shelf.updateMany(
           {
             _id: { $in: shelfs },
@@ -98,11 +108,14 @@ exports.inStock = catchAsync(async (req, res, next) => {
           {
             color: inColor,
             duration,
-            status: 1,
+            status: 2,
           },
           { runValidators: true, session }
         );
       }
+
+      updateLightInfo(lightIds.length, duration, inColor, 2, lightIds);
+
       res.status(200).json({
         status: 'success',
         data: {
@@ -150,9 +163,9 @@ exports.outStock = catchAsync(async (req, res, next) => {
           locationId: { $in: locationIds },
         },
         { _id: 0, locationId: 1, lightId: 1, shelf: 1, status: 1 }
-      );
+      ).populate({ path: 'shelf', select: 'lightId' });
 
-      const { notExist, working, err, normal } = filterLocation(
+      const { notExist, working, err, normal, lightIds } = filterLocation(
         locationInfos,
         locationIds
       );
@@ -164,7 +177,7 @@ exports.outStock = catchAsync(async (req, res, next) => {
           {
             color: outColor,
             duration,
-            status: 1,
+            status: 2,
             taskId,
             taskType: 2,
             userId,
@@ -175,8 +188,11 @@ exports.outStock = catchAsync(async (req, res, next) => {
         // 更改货架灯
         const shelfs = [];
         locationInfos.forEach((item) => {
-          if (normal.includes(item.locationId)) {
-            shelfs.push(item.shelf);
+          const { locationId, shelf } = item;
+          const { _id, lightId } = shelf || {};
+          if (normal.includes(locationId)) {
+            shelfs.push(_id);
+            lightIds.push(lightId);
           }
         });
         await Shelf.updateMany(
@@ -186,11 +202,14 @@ exports.outStock = catchAsync(async (req, res, next) => {
           {
             color: outColor,
             duration,
-            status: 1,
+            status: 2,
           },
           { runValidators: true, session }
         );
       }
+
+      updateLightInfo(lightIds.length, duration, outColor, 2, lightIds);
+
       res.status(200).json({
         status: 'success',
         data: {
@@ -238,9 +257,9 @@ exports.checkStock = catchAsync(async (req, res, next) => {
           locationId: { $in: locationIds },
         },
         { _id: 0, locationId: 1, lightId: 1, shelf: 1, status: 1 }
-      );
+      ).populate({ path: 'shelf', select: 'lightId' });
 
-      const { notExist, working, err, normal } = filterLocation(
+      const { notExist, working, err, normal, lightIds } = filterLocation(
         locationInfos,
         locationIds
       );
@@ -252,7 +271,7 @@ exports.checkStock = catchAsync(async (req, res, next) => {
           {
             color: checkColor,
             duration,
-            status: 1,
+            status: 2,
             taskId,
             taskType: 3,
             userId,
@@ -263,8 +282,11 @@ exports.checkStock = catchAsync(async (req, res, next) => {
         // 更改货架灯
         const shelfs = [];
         locationInfos.forEach((item) => {
-          if (normal.includes(item.locationId)) {
-            shelfs.push(item.shelf);
+          const { locationId, shelf } = item;
+          const { _id, lightId } = shelf || {};
+          if (normal.includes(locationId)) {
+            shelfs.push(_id);
+            lightIds.push(lightId);
           }
         });
         await Shelf.updateMany(
@@ -274,11 +296,14 @@ exports.checkStock = catchAsync(async (req, res, next) => {
           {
             color: checkColor,
             duration,
-            status: 1,
+            status: 2,
           },
           { runValidators: true, session }
         );
       }
+
+      updateLightInfo(lightIds.length, duration, checkColor, 2, lightIds);
+
       res.status(200).json({
         status: 'success',
         data: {
@@ -297,11 +322,15 @@ exports.process = catchAsync(async (req, res, next) => {
   const { locationId } = req.body;
   const newLocation = await Location.findOneAndUpdate(
     { locationId },
-    { status: 2 },
+    { status: 1 },
     { runValidators: true, new: true }
   );
 
   if (!newLocation) return next(new AppError('Not found location', 400));
+
+  const { duration, color, lightId } = newLocation;
+  updateLightInfo(1, duration, color, 1, [lightId]);
+
   res.status(200).json({
     status: 'success',
     data: {

@@ -10,6 +10,15 @@ const shelfSchema = new mongoose.Schema({
     type: String,
     required: [true, 'A shelf must have a light id'],
     unique: true,
+    validate: {
+      validator: async function (value) {
+        const count = await this.model('Location').countDocuments({
+          lightId: value,
+        });
+        return count === 0;
+      },
+      message: 'Light id is already taken by a location',
+    },
   },
   color: {
     type: String,
