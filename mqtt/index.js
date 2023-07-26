@@ -1,4 +1,5 @@
 const mqtt = require('mqtt');
+const { receivingMessage } = require('./subsribe');
 
 const protocol = 'mqtt';
 const port = 1883;
@@ -19,13 +20,16 @@ const connectUrl = `${protocol}://${host}:${port}`;
 
 const client = mqtt.connect(connectUrl, options);
 
-// client.on('connect', () => {
-//   console.log(`${protocol}: Connected`);
-//   client.publish('/light/node9', 'test', { qos: 2 }, (error) => {
-//     if (error) {
-//       console.error(error);
-//     }
-//   });
-// });
+client.on('connect', () => {
+  client.subscribe('/light/dev', { qos: 2 }, (error) => {
+    if (error) {
+      console.error(error);
+    }
+  });
+});
+
+client.on('message', (topic, payload) => {
+  receivingMessage(topic, payload);
+});
 
 module.exports = client;

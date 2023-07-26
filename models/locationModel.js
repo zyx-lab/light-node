@@ -31,9 +31,12 @@ const locationSchema = new mongoose.Schema(
     status: {
       type: Number,
       enum: {
-        values: [0, 1, 2],
-        message: 'Status is either: 0, 1, 2',
+        values: [0, 1, 2, 3],
+        message: 'Status is either: 0, 1, 2, 3',
       },
+    },
+    errCode: {
+      type: String,
     },
     taskId: {
       type: String,
