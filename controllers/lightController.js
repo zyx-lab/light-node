@@ -341,7 +341,7 @@ exports.process = catchAsync(async (req, res, next) => {
 
 exports.close = catchAsync(async (req, res, next) => {
   const { lightId } = req.body;
-
+  let shelfLightId;
   const session = await mongoose.startSession();
   const transactionOptions = {
     readPreference: 'primary',
@@ -365,9 +365,16 @@ exports.close = catchAsync(async (req, res, next) => {
         status: { $in: [1, 2] },
       });
       if (!shelfs.length) {
-        await Shelf.findByIdAndUpdate(newLocation.shelf, {
+        const newShelf = await Shelf.findByIdAndUpdate(newLocation.shelf, {
           status: 0,
         });
+        if (!newShelf) return next(new AppError('Not found shelf', 400));
+        shelfLightId = newShelf.lightId;
+      }
+      if (shelfLightId) {
+        updateLightInfo(2, 0, '', 0, [lightId, shelfLightId]);
+      } else {
+        updateLightInfo(1, 0, '', 0, [lightId]);
       }
       res.status(200).json({
         status: 'success',

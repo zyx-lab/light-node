@@ -1,4 +1,5 @@
 const { decode } = require('hex-encode-decode');
+const request = require('../utils/request');
 const conversion = require('../utils/conversion');
 const Location = require('../models/locationModel');
 const Shelf = require('../models/shelfModel');
@@ -52,27 +53,33 @@ async function lightError(payload) {
   }
 }
 
+async function notifyWms(locationId) {
+  try {
+    await request.POST(
+      'http://127.0.0.1:4000',
+      { locationId },
+      {
+        veryConfig: {
+          duplicatedKey: locationId,
+        },
+      }
+    );
+  } catch (err) {
+    console.error('err', err);
+  }
+}
+
 const lightClose = async (payload) => {
   try {
     const len = parseInt(payload.slice(4, 8), 16);
     const quantity = parseInt(payload.slice(10, 14), 16);
     if (len !== 3 + 2 * quantity) return;
-    const lightId = payload.slice(14, 14 + quantity * 4);
-    const lightIdList = [];
-
-    if (lightId.length % 4 === 0) {
-      let i = 0;
-      while (i < quantity * 4) {
-        const id = lightId.slice(i, i + 4);
-        const parsedId = id ? parseInt(id, 16).toString() : null;
-        if (parsedId) lightIdList.push(parsedId);
-        i += 4;
-      }
-
-      const locations = await Location.find({
-        lightId: { $in: [3, 4] },
-      }).select('locationId');
-      const locationId = locations.map((item) => item.locationId);
+    const lightIdHex = payload.slice(14, 14 + quantity * 4);
+    const lightId = parseInt(lightIdHex, 16).toString();
+    const location = await Location.findOne({ lightId }).select('locationId');
+    const { locationId } = location;
+    if (locationId) {
+      notifyWms(locationId, lightId);
     }
   } catch (err) {
     console.error(err);
