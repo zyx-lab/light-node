@@ -7,6 +7,10 @@ const locationSchema = new mongoose.Schema(
       required: [true, 'A location must have a location id'],
       unique: true,
     },
+    topic: {
+      type: String,
+      required: [true, 'A shelf must have a topic'],
+    },
     lightId: {
       type: String,
       required: [true, 'A location must have a light id'],

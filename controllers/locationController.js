@@ -5,7 +5,7 @@ const AppError = require('../utils/appError');
 const APIFeatures = require('../utils/apiFeatures');
 
 exports.createLocation = catchAsync(async (req, res, next) => {
-  const { locationId, shelfId, lightId } = req.body;
+  const { locationId, shelfId, lightId, topic } = req.body;
   const shelf = await Shelf.findOne({ shelfId });
   if (!shelf) return next(new AppError('Invalid shelf id', 404));
 
@@ -13,6 +13,7 @@ exports.createLocation = catchAsync(async (req, res, next) => {
     locationId: locationId,
     shelf: shelf._id,
     lightId: lightId,
+    topic,
   });
   res.status(201).json({
     status: 'success',

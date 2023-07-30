@@ -1,5 +1,5 @@
 const express = require('express');
-const shelfValidator = require('../validator/shelf');
+const shelfValidator = require('../validator/shelfValidator');
 const shelfController = require('../controllers/shelfController');
 
 const { createShelf, deleteShelf, updateShelf, getAllShelves, getShelf } =

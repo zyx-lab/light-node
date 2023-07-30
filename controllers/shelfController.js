@@ -8,6 +8,7 @@ exports.createShelf = catchAsync(async (req, res, next) => {
   const newShelf = await Shelf.create({
     shelfId: req.body.shelfId,
     lightId: req.body.lightId,
+    topic: req.body.topic,
   });
 
   res.status(201).json({

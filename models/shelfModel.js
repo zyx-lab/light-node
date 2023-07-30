@@ -6,6 +6,10 @@ const shelfSchema = new mongoose.Schema({
     required: [true, 'A shelf must have a shelf id'],
     unique: true,
   },
+  topic: {
+    type: String,
+    required: [true, 'A shelf must have a topic'],
+  },
   lightId: {
     type: String,
     required: [true, 'A shelf must have a light id'],

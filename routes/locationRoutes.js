@@ -1,5 +1,5 @@
 const express = require('express');
-const locationValidator = require('../validator/location');
+const locationValidator = require('../validator/locationValidator');
 const locationController = require('../controllers/locationController');
 
 const {
