@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 const shelfSchema = new mongoose.Schema({
   shelfId: {
@@ -35,12 +36,21 @@ const shelfSchema = new mongoose.Schema({
     type: Number,
     enum: {
       values: [0, 1, 2, 3],
-      message: 'Status is either: 0, 1, 3',
+      message: 'Status is either: 0, 1, 2, 3',
     },
   },
   errCode: {
-    type: String,
+    type: Number,
   },
+});
+
+shelfSchema.virtual('realStatus').get(function () {
+  if (this.status === 0 || this.status === 3) {
+    return this.status;
+  }
+  const currentTime = moment();
+  const endTime = moment(this.time).add(this.duration, 'millisecond');
+  return currentTime.isBefore(endTime) ? this.status : 0;
 });
 
 const Shelf = mongoose.model('Shelf', shelfSchema);

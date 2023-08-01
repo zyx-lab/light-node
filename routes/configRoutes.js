@@ -1,5 +1,5 @@
 const express = require('express');
-const configValidator = require('../validator/config');
+const configValidator = require('../validator/configValidator');
 const configController = require('../controllers/configController');
 
 const { save } = configController;

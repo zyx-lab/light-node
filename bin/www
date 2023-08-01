@@ -16,6 +16,9 @@ const debug = require('debug')('light-middleware:server');
 const http = require('http');
 const mongoose = require('mongoose');
 const app = require('../app');
+const mqttClient = require('../mqtt/mqttClient');
+
+mqttClient.connect();
 
 const configService = require('../services/configService');
 /**

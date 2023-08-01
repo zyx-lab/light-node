@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 const locationSchema = new mongoose.Schema(
   {
@@ -32,6 +33,9 @@ const locationSchema = new mongoose.Schema(
       // ms
       type: Number,
     },
+    updateTime: {
+      type: Date,
+    },
     status: {
       type: Number,
       enum: {
@@ -40,17 +44,10 @@ const locationSchema = new mongoose.Schema(
       },
     },
     errCode: {
-      type: String,
+      type: Number,
     },
     taskId: {
       type: String,
-    },
-    taskType: {
-      type: Number,
-      enum: {
-        values: [1, 2, 3],
-        message: 'Task type is either: 1, 2, 3',
-      },
     },
     shelf: {
       type: mongoose.Schema.ObjectId,
@@ -63,6 +60,15 @@ const locationSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
+locationSchema.virtual('realStatus').get(function () {
+  if (this.status === 0 || this.status === 3) {
+    return this.status;
+  }
+  const currentTime = moment();
+  const endTime = moment(this.updateTime).add(this.duration, 'millisecond');
+  return currentTime.isBefore(endTime) ? this.status : 0;
+});
 
 const Location = mongoose.model('Location', locationSchema);
 
