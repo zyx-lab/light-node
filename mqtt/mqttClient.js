@@ -13,8 +13,8 @@ const { updateLightInfo } = require('./publishMqtt');
 const options = {
   protocol: 'mqtt',
   port: 1883,
-  // host: '192.168.1.102',
-  host: 'localhost',
+  host: '192.168.1.102',
+  // host: 'localhost',
   clientId: 'node',
   clean: true,
   connectTimeout: 4000,
@@ -34,7 +34,7 @@ class MqttClient {
 
     this.client.on('connect', () => {
       console.log('连接成功');
-      this.client.subscribe('/andon/dev', { qos: 2 }, (error) => {
+      this.client.subscribe('/andon/dev/#', { qos: 2 }, (error) => {
         if (error) {
           console.error(error);
         }
@@ -42,6 +42,7 @@ class MqttClient {
     });
 
     this.client.on('message', async (topic, payload) => {
+      console.log('接收消息');
       const payloadHex = payload.toString('hex');
       const checkBCC = checkPayloadBcc(payloadHex);
       if (checkBCC || true) {

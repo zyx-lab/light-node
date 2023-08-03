@@ -143,6 +143,7 @@ exports.process = catchAsync(async (req, res, next) => {
     lightTopics[topic] = [];
   }
   lightTopics[topic].push(lightId);
+
   if (shelf) {
     if (!lightTopics[shelf.topic]) {
       lightTopics[shelf.topic] = [];
@@ -153,7 +154,7 @@ exports.process = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
   });
-
+  console.log('lightTopics', lightTopics);
   // 给硬件发送亮灯指令
   forEach(lightTopics, async (lights, _topic) => {
     try {
@@ -173,7 +174,6 @@ exports.process = catchAsync(async (req, res, next) => {
       );
       const message = updateLightInfo(
         seq,
-        `/andon/${_topic}`,
         lights.length,
         duration,
         color,
@@ -184,5 +184,162 @@ exports.process = catchAsync(async (req, res, next) => {
     } catch (err) {
       console.error(err);
     }
+  });
+});
+
+exports.openLight = catchAsync(async (req, res, next) => {
+  const { locationIds, color, duration } = req.body;
+
+  const locationInfos = await Location.find(
+    {
+      locationId: { $in: locationIds },
+    },
+    { _id: 0, locationId: 1, lightId: 1, topic: 1 }
+  );
+
+  // 按主题分类统计lightId
+  const lightTopics = {};
+  locationInfos.forEach((item) => {
+    const { lightId, topic } = item;
+    if (!lightTopics[topic]) {
+      lightTopics[topic] = new Set();
+    }
+    lightTopics[topic].add(lightId);
+  });
+
+  // 给硬件发送亮灯指令
+  forEach(lightTopics, async (lightIds, topic) => {
+    try {
+      // const seq = Seq.get();
+      const seq = 0;
+      await Message.findOneAndUpdate(
+        { seq },
+        {
+          seq,
+          type: 2,
+          taskId: '',
+          color,
+          duration,
+          status: 0,
+          $set: { lightIds: [...lightIds] },
+        },
+        { runValidators: true, upsert: true, new: true }
+      );
+      const message = updateLightInfo(seq, lightIds.size, duration, color, 2, [
+        ...lightIds,
+      ]);
+      mqttClient.publishMessage(`/andon/${topic}`, message);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  res.status(200).json({
+    status: 'success',
+  });
+});
+
+exports.blinkLight = catchAsync(async (req, res, next) => {
+  const { locationIds, color, duration } = req.body;
+
+  const locationInfos = await Location.find(
+    {
+      locationId: { $in: locationIds },
+    },
+    { _id: 0, locationId: 1, lightId: 1, topic: 1 }
+  );
+
+  // 按主题分类统计lightId
+  const lightTopics = {};
+  locationInfos.forEach((item) => {
+    const { lightId, topic } = item;
+    if (!lightTopics[topic]) {
+      lightTopics[topic] = new Set();
+    }
+    lightTopics[topic].add(lightId);
+  });
+
+  // 给硬件发送亮灯指令
+  forEach(lightTopics, async (lightIds, topic) => {
+    try {
+      // const seq = Seq.get();
+      const seq = 0;
+      await Message.findOneAndUpdate(
+        { seq },
+        {
+          seq,
+          type: 1,
+          taskId: '',
+          color,
+          duration,
+          status: 0,
+          $set: { lightIds: [...lightIds] },
+        },
+        { runValidators: true, upsert: true, new: true }
+      );
+      const message = updateLightInfo(seq, lightIds.size, duration, color, 1, [
+        ...lightIds,
+      ]);
+      mqttClient.publishMessage(`/andon/${topic}`, message);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  res.status(200).json({
+    status: 'success',
+  });
+});
+
+exports.closeLight = catchAsync(async (req, res, next) => {
+  const { locationIds } = req.body;
+
+  const locationInfos = await Location.find(
+    {
+      locationId: { $in: locationIds },
+    },
+    { _id: 0, locationId: 1, lightId: 1, topic: 1 }
+  );
+
+  // 按主题分类统计lightId
+  const lightTopics = {};
+  locationInfos.forEach((item) => {
+    const { lightId, topic } = item;
+    if (!lightTopics[topic]) {
+      lightTopics[topic] = new Set();
+    }
+    lightTopics[topic].add(lightId);
+  });
+
+  // 给硬件发送亮灯指令
+  forEach(lightTopics, async (lightIds, topic) => {
+    try {
+      // const seq = Seq.get();
+      const seq = 0;
+      await Message.findOneAndUpdate(
+        { seq },
+        {
+          seq,
+          type: 0,
+          taskId: '',
+          color: '',
+          duration: 0,
+          status: 0,
+          $set: { lightIds: [...lightIds] },
+        },
+        { runValidators: true, upsert: true, new: true }
+      );
+      const message = updateLightInfo(seq, lightIds.size, 0, '000000', 0, [
+        ...lightIds,
+      ]);
+      console.log('message', message);
+      mqttClient.publishMessage(`/andon/${topic}`, message);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  res.status(200).json({
+    status: 'success',
   });
 });

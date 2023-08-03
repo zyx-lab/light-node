@@ -16,7 +16,6 @@ const messageSchema = new mongoose.Schema({
   },
   taskId: {
     type: String,
-    required: [true, 'A message must have a taskId'],
   },
   lightIds: {
     type: [String],
@@ -24,11 +23,9 @@ const messageSchema = new mongoose.Schema({
   },
   color: {
     type: String,
-    required: [true, 'A message must have a color'],
   },
   duration: {
     type: Number,
-    required: [true, 'A message must have a duration'],
   },
   status: {
     type: Number,

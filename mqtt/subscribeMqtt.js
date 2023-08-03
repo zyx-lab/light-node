@@ -65,7 +65,8 @@ async function handleAck(payload) {
         {
           color,
           duration,
-          status: 1,
+          status: type,
+          errCode: 0,
           taskId,
           updateTime: new Date(),
         },
@@ -78,7 +79,7 @@ async function handleAck(payload) {
         {
           color: color,
           duration,
-          status: 1,
+          status: type,
           updateTime: new Date(),
         },
         { runValidators: true }
@@ -111,7 +112,7 @@ async function handleAck(payload) {
       errLocationIds = errLocations.map((item) => item.locationId);
     }
 
-    if (type === 1) {
+    if (taskId && type === 1) {
       console.log(
         '调用PDA闪烁成功接口',
         taskId,
@@ -119,8 +120,13 @@ async function handleAck(payload) {
         errLocationIds
       );
     }
-    if (type === 2) {
-      console.log('调用PDA亮灯成功接口', normalLocationIds, errLocationIds);
+    if (taskId && type === 2) {
+      console.log(
+        '调用PDA亮灯成功接口',
+        taskId,
+        normalLocationIds,
+        errLocationIds
+      );
     }
   } catch (err) {
     console.error(err);
@@ -179,13 +185,14 @@ const lightClose = async (payload) => {
       lightIds.push(lightId);
       index += 4;
     }
+    console.log('lightClose', lightIds);
 
     // 查询灯带对应的库位ID和任务ID
     const locationInfos = await Location.find(
       { lightId: { $in: lightIds } },
       { _id: 0, taskId: 1, locationId: 1 }
     );
-
+    console.log('locationInfos', locationInfos);
     // 调用PDA入库完成接口
     console.log('调用PDA入库完成接口', locationInfos);
 
@@ -202,11 +209,13 @@ const lightClose = async (payload) => {
     }
     lightTopics[topic].push(lightId);
 
+    console.log('shelf', shelf);
     if (shelf) {
       const shelves = await Shelf.find({
         shelf: shelf._id,
         realStatus: { $in: [1, 2] },
       });
+      console.log('shelves', shelves);
       if (!shelves.length) {
         if (!lightTopics[shelf.topic]) {
           lightTopics[shelf.topic] = [];
@@ -214,6 +223,7 @@ const lightClose = async (payload) => {
         lightTopics[shelf.topic].push(shelf.lightId);
       }
     }
+    console.log('关灯 lightTopics', lightTopics);
     return lightTopics;
   } catch (err) {
     console.error(err);
