@@ -1,18 +1,39 @@
+const { forEach } = require('lodash');
+const mongoose = require('mongoose');
 const Shelf = require('../models/shelfModel');
 const Location = require('../models/locationModel');
+const Message = require('../models/messageModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
-const APIFeatures = require('../utils/apiFeatures');
+const { updateLightInfo } = require('../mqtt/publishMqtt');
+const mqttClient = require('../mqtt/mqttClient');
+const Seq = require('../utils/seq');
 
-exports.createShelf = catchAsync(async (req, res, next) => {
-  const newShelf = await Shelf.create({
-    shelfId: req.body.shelfId,
-    lightId: req.body.lightId,
-    topic: req.body.topic,
-  });
-
-  res.status(201).json({
-    status: 'success',
+exports.saveShelf = catchAsync(async (req, res, next) => {
+  const { _id, shelfId, lightId, topic } = req.body;
+  let newShelf;
+  if (_id) {
+    // 修改
+    newShelf = await Shelf.findByIdAndUpdate(
+      _id,
+      {
+        shelfId: shelfId,
+        lightId: lightId,
+        topic: topic,
+      },
+      { runValidators: true, new: true }
+    );
+  } else {
+    // 新建
+    newShelf = await Shelf.create({
+      shelfId: shelfId,
+      lightId: lightId,
+      topic: topic,
+      status: 0,
+    });
+  }
+  res.status(200).json({
+    code: '200',
     data: {
       shlef: newShelf,
     },
@@ -20,20 +41,32 @@ exports.createShelf = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteShelf = catchAsync(async (req, res, next) => {
-  const { shelfId } = req.params;
-  const shelf = await Shelf.findOne({ shelfId });
-  if (!shelf) {
-    return next(new AppError('Invalid shelf ID', 404));
+  const session = await mongoose.startSession();
+  const transactionOptions = {
+    readPreference: 'primary',
+    readConcern: { level: 'local' },
+    writeConcern: { w: 'majority' },
+  };
+
+  try {
+    await session.withTransaction(async () => {}, transactionOptions);
+    const shelf = await Shelf.findByIdAndDelete(req.query.id);
+
+    await Location.deleteMany({ shelf: req.query.id });
+
+    if (shelf) {
+      return res.status(200).json({
+        code: '204',
+        data: shelf,
+      });
+    }
+    return res.status(200).json({
+      code: '404',
+      message: '货架不存在',
+    });
+  } finally {
+    await session.endSession();
   }
-
-  const location = await Location.find({ shelf: shelf._id });
-  if (location.length > 0)
-    return next(
-      new AppError('Cannot delete the shelf. It has associated locations.', 409)
-    );
-
-  await Shelf.findOneAndDelete({ shelfId });
-  res.status(204).end();
 });
 
 exports.updateShelf = catchAsync(async (req, res, next) => {
@@ -58,18 +91,27 @@ exports.updateShelf = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllShelves = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Shelf.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
+  const { status, pageNo, pageSize } = req.query;
+  const query = {};
+  // 筛选
+  if (status && status >= 0) query.status = status;
 
-  const shelves = await features.query;
+  // 分页
+  const page = pageNo * 1 || 1;
+  const limit = pageSize * 1 || 10;
+  const skip = (page - 1) * limit;
+
+  const count = await Shelf.countDocuments(query);
+  const resShelves = await Shelf.find(query).skip(skip).limit(limit);
+
   res.status(200).json({
-    status: 'success',
-    results: shelves.length,
+    code: '200',
     data: {
-      shelves,
+      list: resShelves,
+      pageNo: pageNo * 1,
+      pageSize: pageSize * 1,
+      totalCount: count,
+      totalPage: Math.ceil(count / (pageSize * 1)),
     },
   });
 });
@@ -84,5 +126,164 @@ exports.getShelf = catchAsync(async (req, res, next) => {
     data: {
       shelf,
     },
+  });
+});
+
+exports.openLight = catchAsync(async (req, res, next) => {
+  const { lightIds, color, duration } = req.body;
+
+  const locationInfos = await Shelf.find(
+    {
+      lightId: { $in: lightIds },
+    },
+    { _id: 0, locationId: 1, lightId: 1, topic: 1 }
+  );
+
+  // 按主题分类统计lightId
+  const lightTopics = {};
+  locationInfos.forEach((item) => {
+    const { lightId, topic } = item;
+    if (!lightTopics[topic]) {
+      lightTopics[topic] = new Set();
+    }
+    lightTopics[topic].add(lightId);
+  });
+
+  // 给硬件发送亮灯指令
+  forEach(lightTopics, async (_lightIds, topic) => {
+    try {
+      const seq = Seq.get();
+      await Message.findOneAndUpdate(
+        { seq },
+        {
+          seq,
+          type: 2,
+          taskId: '',
+          color,
+          duration,
+          status: 0,
+          $set: { lightIds: [..._lightIds] },
+        },
+        { runValidators: true, upsert: true, new: true }
+      );
+      const message = updateLightInfo(seq, _lightIds.size, duration, color, 2, [
+        ..._lightIds,
+      ]);
+      console.log(message);
+      mqttClient.publishMessage(`/andon/${topic}9`, message);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  res.status(200).json({
+    code: '200',
+    data: {},
+  });
+});
+
+exports.blinkLight = catchAsync(async (req, res, next) => {
+  const { lightIds, color, duration } = req.body;
+
+  const locationInfos = await Shelf.find(
+    {
+      lightId: { $in: lightIds },
+    },
+    { _id: 0, locationId: 1, lightId: 1, topic: 1 }
+  );
+
+  // 按主题分类统计lightId
+  const lightTopics = {};
+  locationInfos.forEach((item) => {
+    const { lightId, topic } = item;
+    if (!lightTopics[topic]) {
+      lightTopics[topic] = new Set();
+    }
+    lightTopics[topic].add(lightId);
+  });
+
+  // 给硬件发送亮灯指令
+  forEach(lightTopics, async (_lightIds, topic) => {
+    try {
+      const seq = Seq.get();
+      await Message.findOneAndUpdate(
+        { seq },
+        {
+          seq,
+          type: 1,
+          taskId: '',
+          color,
+          duration,
+          status: 0,
+          $set: { lightIds: [..._lightIds] },
+        },
+        { runValidators: true, upsert: true, new: true }
+      );
+      const message = updateLightInfo(seq, _lightIds.size, duration, color, 1, [
+        ..._lightIds,
+      ]);
+      console.log(message);
+      mqttClient.publishMessage(`/andon/${topic}9`, message);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  res.status(200).json({
+    code: '200',
+    data: {},
+  });
+});
+
+exports.closeLight = catchAsync(async (req, res, next) => {
+  const { lightIds } = req.body;
+
+  const locationInfos = await Shelf.find(
+    {
+      lightId: { $in: lightIds },
+    },
+    { _id: 0, locationId: 1, lightId: 1, topic: 1 }
+  );
+
+  // 按主题分类统计lightId
+  const lightTopics = {};
+  locationInfos.forEach((item) => {
+    const { lightId, topic } = item;
+    if (!lightTopics[topic]) {
+      lightTopics[topic] = new Set();
+    }
+    lightTopics[topic].add(lightId);
+  });
+
+  // 给硬件发送亮灯指令
+  forEach(lightTopics, async (_lightIds, topic) => {
+    try {
+      const seq = Seq.get();
+      await Message.findOneAndUpdate(
+        { seq },
+        {
+          seq,
+          type: 0,
+          taskId: '',
+          color: '',
+          duration: 0,
+          status: 0,
+          $set: { lightIds: [..._lightIds] },
+        },
+        { runValidators: true, upsert: true, new: true }
+      );
+      const message = updateLightInfo(seq, _lightIds.size, 0, '000000', 0, [
+        ..._lightIds,
+      ]);
+      console.log('message', message);
+      mqttClient.publishMessage(`/andon/${topic}9`, message);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  res.status(200).json({
+    code: '200',
+    data: {},
   });
 });

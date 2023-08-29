@@ -10,9 +10,8 @@ const router = express.Router();
 router
   .patch('/create_task', lightValidator.createTask, createTask)
   .patch('/process', lightValidator.process, process)
-  .patch('/open', lightValidator.openLight, openLight)
-  .patch('/blink', lightValidator.blinkLight, blinkLight)
-  .patch('/close', lightValidator.closeLight, closeLight)
-  .patch('/close', lightValidator.close);
+  .post('/open', lightValidator.openLight, openLight)
+  .post('/blink', lightValidator.blinkLight, blinkLight)
+  .post('/close', lightValidator.closeLight, closeLight);
 
 module.exports = router;

@@ -1,48 +1,54 @@
 const mongoose = require('mongoose');
 const moment = require('moment');
 
-const shelfSchema = new mongoose.Schema({
-  shelfId: {
-    type: String,
-    required: [true, 'A shelf must have a shelf id'],
-    unique: true,
-  },
-  topic: {
-    type: String,
-    required: [true, 'A shelf must have a topic'],
-  },
-  lightId: {
-    type: String,
-    required: [true, 'A shelf must have a light id'],
-    unique: true,
-    validate: {
-      validator: async function (value) {
-        const count = await this.model('Location').countDocuments({
-          lightId: value,
-        });
-        return count === 0;
+const shelfSchema = new mongoose.Schema(
+  {
+    shelfId: {
+      type: String,
+      required: [true, 'A shelf must have a shelf id'],
+      unique: true,
+    },
+    topic: {
+      type: String,
+      required: [true, 'A shelf must have a topic'],
+    },
+    lightId: {
+      type: String,
+      required: [true, 'A shelf must have a light id'],
+      unique: true,
+      validate: {
+        validator: async function (value) {
+          const count = await mongoose.model('Location').countDocuments({
+            lightId: value,
+          });
+          return count === 0;
+        },
+        message: 'Light id is already taken by a location',
       },
-      message: 'Light id is already taken by a location',
+    },
+    color: {
+      type: String,
+    },
+    duration: {
+      // ms
+      type: String,
+    },
+    status: {
+      type: Number,
+      enum: {
+        values: [0, 1, 2, 3],
+        message: 'Status is either: 0, 1, 2, 3',
+      },
+    },
+    errCode: {
+      type: Number,
     },
   },
-  color: {
-    type: String,
-  },
-  duration: {
-    // ms
-    type: String,
-  },
-  status: {
-    type: Number,
-    enum: {
-      values: [0, 1, 2, 3],
-      message: 'Status is either: 0, 1, 2, 3',
-    },
-  },
-  errCode: {
-    type: Number,
-  },
-});
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 shelfSchema.virtual('realStatus').get(function () {
   if (this.status === 0 || this.status === 3) {

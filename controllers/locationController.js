@@ -2,36 +2,56 @@ const Location = require('../models/locationModel');
 const Shelf = require('../models/shelfModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
-const APIFeatures = require('../utils/apiFeatures');
 
-exports.createLocation = catchAsync(async (req, res, next) => {
-  const { locationId, shelfId, lightId, topic } = req.body;
-  const shelf = await Shelf.findOne({ shelfId });
-  if (!shelf) return next(new AppError('Invalid shelf id', 404));
-
-  const newLocation = await Location.create({
-    locationId: locationId,
-    shelf: shelf._id,
-    lightId: lightId,
-    topic,
-  });
-  res.status(201).json({
-    status: 'success',
+exports.saveLocation = catchAsync(async (req, res, next) => {
+  const { _id, locationId, shelf, lightId, topic } = req.body;
+  let newLocation;
+  if (_id) {
+    // 修改
+    newLocation = await Location.findByIdAndUpdate(
+      _id,
+      {
+        locationId,
+        shelf,
+        lightId,
+        topic,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+  } else {
+    // 新建
+    newLocation = await Location.create({
+      locationId,
+      shelf,
+      lightId,
+      topic,
+      status: 0,
+    });
+  }
+  res.status(200).json({
+    code: '200',
     data: {
-      location: newLocation,
+      shlef: newLocation,
     },
   });
 });
 
 exports.deleteLocation = catchAsync(async (req, res, next) => {
-  const location = await Location.findOneAndDelete({
-    locationId: req.params.locationId,
-  });
+  const location = await Location.findByIdAndDelete(req.query.id);
 
-  if (!location) {
-    return next(new AppError('Invalid location ID', 404));
+  if (location) {
+    return res.status(200).json({
+      code: '204',
+      data: location,
+    });
   }
-  res.status(204).end();
+  return res.status(200).json({
+    code: '404',
+    message: '货架不存在',
+  });
 });
 
 exports.updateLocation = catchAsync(async (req, res, next) => {
@@ -63,18 +83,36 @@ exports.updateLocation = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllLocations = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Location.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
+  const { status, shelf, pageNo, pageSize } = req.query;
 
-  const locations = await features.query;
+  const query = {};
+  // 筛选
+  if (status && status >= 0) {
+    query.status = status;
+  }
+  if (shelf) {
+    query.shelf = shelf;
+  }
+
+  // 分页
+  const page = pageNo * 1 || 1;
+  const limit = pageSize * 1 || 10;
+  const skip = (page - 1) * limit;
+
+  const count = await Location.countDocuments({});
+  const resShelves = await Location.find(query)
+    .populate({ path: 'shelf', select: 'shelfId' })
+    .skip(skip)
+    .limit(limit);
+
   res.status(200).json({
-    status: 'success',
-    results: locations.length,
+    code: '200',
     data: {
-      locations,
+      list: resShelves,
+      pageNo: pageNo * 1,
+      pageSize: pageSize * 1,
+      totalCount: count,
+      totalPage: Math.ceil(count / (pageSize * 1)),
     },
   });
 });

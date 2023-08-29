@@ -154,7 +154,6 @@ exports.process = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
   });
-  console.log('lightTopics', lightTopics);
   // 给硬件发送亮灯指令
   forEach(lightTopics, async (lights, _topic) => {
     try {
@@ -188,11 +187,11 @@ exports.process = catchAsync(async (req, res, next) => {
 });
 
 exports.openLight = catchAsync(async (req, res, next) => {
-  const { locationIds, color, duration } = req.body;
+  const { lightIds, color, duration } = req.body;
 
   const locationInfos = await Location.find(
     {
-      locationId: { $in: locationIds },
+      lightId: { $in: lightIds },
     },
     { _id: 0, locationId: 1, lightId: 1, topic: 1 }
   );
@@ -208,10 +207,9 @@ exports.openLight = catchAsync(async (req, res, next) => {
   });
 
   // 给硬件发送亮灯指令
-  forEach(lightTopics, async (lightIds, topic) => {
+  forEach(lightTopics, async (_lightIds, topic) => {
     try {
-      // const seq = Seq.get();
-      const seq = 0;
+      const seq = Seq.get();
       await Message.findOneAndUpdate(
         { seq },
         {
@@ -221,30 +219,32 @@ exports.openLight = catchAsync(async (req, res, next) => {
           color,
           duration,
           status: 0,
-          $set: { lightIds: [...lightIds] },
+          $set: { lightIds: [..._lightIds] },
         },
         { runValidators: true, upsert: true, new: true }
       );
-      const message = updateLightInfo(seq, lightIds.size, duration, color, 2, [
-        ...lightIds,
+      const message = updateLightInfo(seq, _lightIds.size, duration, color, 2, [
+        ..._lightIds,
       ]);
-      mqttClient.publishMessage(`/andon/${topic}`, message);
+      console.log(message);
+      mqttClient.publishMessage(`/andon/${topic}9`, message);
     } catch (err) {
       console.error(err);
     }
   });
 
   res.status(200).json({
-    status: 'success',
+    code: '200',
+    data: {},
   });
 });
 
 exports.blinkLight = catchAsync(async (req, res, next) => {
-  const { locationIds, color, duration } = req.body;
+  const { lightIds, color, duration } = req.body;
 
   const locationInfos = await Location.find(
     {
-      locationId: { $in: locationIds },
+      lightId: { $in: lightIds },
     },
     { _id: 0, locationId: 1, lightId: 1, topic: 1 }
   );
@@ -260,10 +260,9 @@ exports.blinkLight = catchAsync(async (req, res, next) => {
   });
 
   // 给硬件发送亮灯指令
-  forEach(lightTopics, async (lightIds, topic) => {
+  forEach(lightTopics, async (_lightIds, topic) => {
     try {
-      // const seq = Seq.get();
-      const seq = 0;
+      const seq = Seq.get();
       await Message.findOneAndUpdate(
         { seq },
         {
@@ -273,30 +272,32 @@ exports.blinkLight = catchAsync(async (req, res, next) => {
           color,
           duration,
           status: 0,
-          $set: { lightIds: [...lightIds] },
+          $set: { lightIds: [..._lightIds] },
         },
         { runValidators: true, upsert: true, new: true }
       );
-      const message = updateLightInfo(seq, lightIds.size, duration, color, 1, [
-        ...lightIds,
+      const message = updateLightInfo(seq, _lightIds.size, duration, color, 1, [
+        ..._lightIds,
       ]);
-      mqttClient.publishMessage(`/andon/${topic}`, message);
+      console.log(message);
+      mqttClient.publishMessage(`/andon/${topic}9`, message);
     } catch (err) {
       console.error(err);
     }
   });
 
   res.status(200).json({
-    status: 'success',
+    code: '200',
+    data: {},
   });
 });
 
 exports.closeLight = catchAsync(async (req, res, next) => {
-  const { locationIds } = req.body;
+  const { lightIds } = req.body;
 
   const locationInfos = await Location.find(
     {
-      locationId: { $in: locationIds },
+      lightId: { $in: lightIds },
     },
     { _id: 0, locationId: 1, lightId: 1, topic: 1 }
   );
@@ -312,10 +313,9 @@ exports.closeLight = catchAsync(async (req, res, next) => {
   });
 
   // 给硬件发送亮灯指令
-  forEach(lightTopics, async (lightIds, topic) => {
+  forEach(lightTopics, async (_lightIds, topic) => {
     try {
-      // const seq = Seq.get();
-      const seq = 0;
+      const seq = Seq.get();
       await Message.findOneAndUpdate(
         { seq },
         {
@@ -325,21 +325,22 @@ exports.closeLight = catchAsync(async (req, res, next) => {
           color: '',
           duration: 0,
           status: 0,
-          $set: { lightIds: [...lightIds] },
+          $set: { lightIds: [..._lightIds] },
         },
         { runValidators: true, upsert: true, new: true }
       );
-      const message = updateLightInfo(seq, lightIds.size, 0, '000000', 0, [
-        ...lightIds,
+      const message = updateLightInfo(seq, _lightIds.size, 0, '000000', 0, [
+        ..._lightIds,
       ]);
       console.log('message', message);
-      mqttClient.publishMessage(`/andon/${topic}`, message);
+      mqttClient.publishMessage(`/andon/${topic}9`, message);
     } catch (err) {
       console.error(err);
     }
   });
 
   res.status(200).json({
-    status: 'success',
+    code: '200',
+    data: {},
   });
 });

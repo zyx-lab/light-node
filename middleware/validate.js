@@ -9,6 +9,9 @@ module.exports = (validations) => async (req, res, next) => {
   if (errors.isEmpty()) {
     return next();
   }
-
-  res.status(400).json({ errors: errors.array() });
+  res.status(200).json({
+    code: '400',
+    message: '格式错误',
+  });
+  // res.status(400).json({ errors: errors.array() });
 };

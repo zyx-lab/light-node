@@ -17,7 +17,7 @@ async function handleAck(payload) {
   try {
     const seq = parseInt(payload.slice(0, 4), 16);
     const len = parseInt(payload.slice(6, 10), 16);
-
+    console.log('handleAck', payload);
     // 确认消息
     const message = await Message.findOneAndUpdate(
       { seq, status: 0 },
@@ -66,7 +66,7 @@ async function handleAck(payload) {
           color,
           duration,
           status: type,
-          errCode: 0,
+          // errCode: 0,
           taskId,
           updateTime: new Date(),
         },
@@ -192,12 +192,12 @@ const lightClose = async (payload) => {
       { lightId: { $in: lightIds } },
       { _id: 0, taskId: 1, locationId: 1 }
     );
-    console.log('locationInfos', locationInfos);
     // 调用PDA入库完成接口
     console.log('调用PDA入库完成接口', locationInfos);
+    // return;
 
     // 获取需要关闭的lightId
-    const locationId = '1';
+    const locationId = '2';
     const lightTopics = {};
     const locations = await Location.findOne({
       locationId: locationId,

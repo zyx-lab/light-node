@@ -18,7 +18,7 @@ const locationSchema = new mongoose.Schema(
       unique: true,
       validate: {
         validator: async function (value) {
-          const count = await this.model('Shelf').countDocuments({
+          const count = await mongoose.model('Shelf').count({
             lightId: value,
           });
           return count === 0;
@@ -66,7 +66,7 @@ locationSchema.virtual('realStatus').get(function () {
     return this.status;
   }
   const currentTime = moment();
-  const endTime = moment(this.updateTime).add(this.duration, 'millisecond');
+  const endTime = moment(this.updateTime).add(this.duration, 'second');
   return currentTime.isBefore(endTime) ? this.status : 0;
 });
 

@@ -58,11 +58,11 @@ exports.close = validate([
 ]);
 
 exports.openLight = validate([
-  body('locationIds')
+  body('lightIds')
     .notEmpty()
-    .withMessage('locationIds不能为空')
+    .withMessage('lightIds不能为空')
     .isArray()
-    .withMessage('locationIds为数组')
+    .withMessage('lightIds为数组')
     .custom((value) => {
       if (value && Array.isArray(value) && value.length > 0) {
         if (value.length !== new Set(value).size) {
@@ -71,10 +71,8 @@ exports.openLight = validate([
       }
       return true;
     })
-    .withMessage('存在重复location id'),
-  body('locationIds.*')
-    .isString()
-    .withMessage('locationIds中的元素为字符串类型'),
+    .withMessage('存在重复light id'),
+  body('lightIds.*').isString().withMessage('lightIds中的元素为字符串类型'),
   body('color')
     .notEmpty()
     .withMessage('color不能为空')
@@ -88,11 +86,11 @@ exports.openLight = validate([
 ]);
 
 exports.blinkLight = validate([
-  body('locationIds')
+  body('lightIds')
     .notEmpty()
-    .withMessage('locationIds不能为空')
+    .withMessage('lightIds不能为空')
     .isArray()
-    .withMessage('locationIds为数组')
+    .withMessage('lightIds为数组')
     .custom((value) => {
       if (value && Array.isArray(value) && value.length > 0) {
         if (value.length !== new Set(value).size) {
@@ -101,10 +99,8 @@ exports.blinkLight = validate([
       }
       return true;
     })
-    .withMessage('存在重复location id'),
-  body('locationIds.*')
-    .isString()
-    .withMessage('locationIds中的元素为字符串类型'),
+    .withMessage('存在重复light id'),
+  body('lightIds.*').isString().withMessage('lightIds中的元素为字符串类型'),
   body('color')
     .notEmpty()
     .withMessage('color不能为空')
@@ -118,11 +114,11 @@ exports.blinkLight = validate([
 ]);
 
 exports.closeLight = validate([
-  body('locationIds')
+  body('lightIds')
     .notEmpty()
-    .withMessage('locationIds不能为空')
+    .withMessage('lightIds不能为空')
     .isArray()
-    .withMessage('locationIds为数组')
+    .withMessage('lightIds为数组')
     .custom((value) => {
       if (value && Array.isArray(value) && value.length > 0) {
         if (value.length !== new Set(value).size) {
@@ -131,8 +127,6 @@ exports.closeLight = validate([
       }
       return true;
     })
-    .withMessage('存在重复location id'),
-  body('locationIds.*')
-    .isString()
-    .withMessage('locationIds中的元素为字符串类型'),
+    .withMessage('存在重复light id'),
+  body('lightIds.*').isString().withMessage('lightIds中的元素为字符串类型'),
 ]);
